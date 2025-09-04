@@ -7,6 +7,27 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
+      minlength: 3,
+      maxlength: 20,
+      match: [
+        /^[a-zA-Z0-9_]+$/,
+        "Username can only contain letters, numbers, and underscores",
+      ],
+    },
+    displayName: {
+      type: String,
+      trim: true,
+      maxlength: 50,
+      default: function () {
+        return this.name; // Default to real name if none provided
+      },
+    },
     email: {
       type: String,
       required: true,
