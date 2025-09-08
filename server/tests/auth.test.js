@@ -106,3 +106,69 @@ describe('Authentication Endpoints', () => {
         });
     });
 });
+
+describe('POST /api/auth/login', () => {
+    const testUser = {
+        name: 'John Smith',
+        username: 'farmer_john',
+        email: 'john@example.com',
+        password: 'Password123!',
+        farmType: 'small-scale'
+    };
+
+    beforeEach(async () => {
+        await request(app)
+            .post('/api/auth/register')
+            .send(testUser)           
+    });
+
+    test('should login with email successfully', async () => {
+        const response = await request(app)
+            .post('/api/auth/login')
+            .send({
+                emailOrUsername: testUser.email,
+                password: testUser.password
+            })
+            .expect(200);
+
+        expect(response.body).toHaveProperty('message', 'Login Successful');
+        expect(response.body).toHaveProperty('token');
+        expect(response.body.user.username).toBe(testUser.username);
+    });
+
+    test('should reject login with wrong password', async () => {
+        const response = await request(app)
+            .post('/api/auth/login')
+            .send({
+                emailOrUsername: testUser.email,
+                password: 'WrongPassword!'
+            })
+            .expect(401);
+
+        expect(response.body.message).toBe('Invalid credentials');
+    });
+
+    test('should reject login with non-existent user', async () => {
+        const response = await request(app)
+            .post('/api/auth/login')
+            .send({
+                emailOrUsername: 'nonexistent@example.com',
+                password: 'Password123!'
+            })
+            .expect(401);
+
+        expect(response.body.message).toBe('Invalid credentials');
+    });
+
+    test('should reject login with missing credentials', async () => {
+        const response = await request(app)
+            .post('/api/auth/login')
+            .send({
+                emailOrUsername: testUser.email,
+                // missing password
+            })
+            .expect(400);
+
+        expect(response.body.message).toBe('Please provide email/username and password')
+    });
+});
