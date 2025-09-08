@@ -130,6 +130,20 @@ describe("POST /api/auth/login", () => {
 
     expect(response.body).toHaveProperty("message", "Login Successful");
     expect(response.body).toHaveProperty("token");
+    expect(response.body.user.email).toBe(testUser.email);
+  });
+
+  test("should login with username successfully", async () => {
+    const response = await request(app)
+      .post("/api/auth/login")
+      .send({
+        emailOrUsername: testUser.username,
+        password: testUser.password,
+      })
+      .expect(200);
+
+    expect(response.body).toHaveProperty("message", "Login Successful");
+    expect(response.body).toHaveProperty("token");
     expect(response.body.user.username).toBe(testUser.username);
   });
 
