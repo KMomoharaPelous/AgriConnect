@@ -185,3 +185,61 @@ describe("POST /api/auth/login", () => {
     );
   });
 });
+
+describe("GET /api/auth/profile (Protected Route)", () => {
+  const testUser = {
+    name: "John Smith",
+    username: "farmer_john",
+    email: "john@example.com",
+    password: "password123",
+    farmType: "small-scale",
+  };
+
+  let authToken;
+  let userId;
+
+  beforeEach(async () => {
+    // Register a test user to get a valid token
+    const registerResponse = await request(app)
+      .post("/api/auth/register")
+      .send(testUser);
+
+    authToken = registerResponse.body.token;
+    userId = registerResponse.body.user.id;
+  });
+
+  test("should access profile with valid token", async () => {
+    const response = await request(app)
+      .get("/api/auth/profile")
+      .set("Authorization", `Bearer ${authToken}`)
+      .expect(200);
+
+    expect(response.body).toHaveProperty(
+      "message",
+      "Profile accessed successfully"
+    );
+    expect(response.body.user).toMatchObject({
+      name: testUser.name,
+      username: testUser.username,
+      email: testUser.email,
+      farmType: testUser.farmType,
+    });
+
+    expect(response.body.user).not.toHaveProperty("password");
+  });
+
+  test("should reject access without token", async () => {
+    const response = await request(app).get("/api/auth/profile").expect(401);
+
+    expect(response.body.message).toBe("Access denied. No token provided.");
+  });
+
+  test("should reject access with invalid token", async () => {
+    const response = await request(app)
+      .get("/api/auth/profile")
+      .set("Authorization", "Bearer invalid_token_here")
+      .expect(401);
+
+    expect(response.body.message).toBe("Invalid token.");
+  });
+});
