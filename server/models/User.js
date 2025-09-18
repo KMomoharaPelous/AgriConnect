@@ -6,6 +6,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      maxlength: 25
     },
     username: {
       type: String,
@@ -23,7 +24,7 @@ const userSchema = new mongoose.Schema(
     displayName: {
       type: String,
       trim: true,
-      maxlength: 50,
+      maxlength: 25,
       default: function () {
         return this.name; // Default to real name if none provided
       },
@@ -51,7 +52,7 @@ const userSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true, // Adds createdAt and updatedAt automatically
+    timestamps: true,
   }
 );
 
