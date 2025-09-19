@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const auth = require("../middleware/auth");
+const ActivityLogger = require("../utils/activityLogger");
 
 const router = express.Router();
 
@@ -55,6 +56,15 @@ router.post("/register", async (req, res) => {
 
     // Save user to database
     const savedUser = await newUser.save();
+
+    // Log Account Creation
+    await ActivityLogger.logActivity(savedUser._id, "account_created", {
+      account: {
+        username: savedUser.username,
+        email: savedUser.email,
+        farmType: savedUser.farmType,
+      },
+    });
 
     // Generate JWT token
     const token = jwt.sign({ userId: savedUser._id }, process.env.JWT_SECRET, {
@@ -144,12 +154,29 @@ router.post("/login", async (req, res) => {
 });
 
 // Protected route - get current user profile
-router.get('/profile', auth, async (req, res) => {
-    res.json({
-        message: 'Profile accessed successfully',
-        user: req.user
-    });
+router.get("/profile", auth, async (req, res) => {
+  res.json({
+    message: "Profile accessed successfully",
+    user: req.user,
+  });
 });
 
+// Gets user's activity log
+router.get("/activity", auth, async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const activities = await ActivityLogger.getUserActivity(userId);
+
+    res.json({
+      message: "Activity retrieved successfully",
+      activities: activities,
+      count: activities.length,
+    });
+  } catch (error) {
+    console.error("❌ Error getting user activity:", error);
+    res.status(500).json({ message: "Server error retrieving activiy" });
+  }
+});
 
 module.exports = router;

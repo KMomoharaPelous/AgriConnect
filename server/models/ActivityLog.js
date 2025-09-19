@@ -12,11 +12,15 @@ const activityLogSchema = new mongoose.Schema(
       type: String,
       required: true,
       enum: [
-        "profile_update",
-        "email_change",
         "account_created",
+        "email_change",
+        "update_displayName",
+        "update_farmType",
+        "update_location",
+        'password_update',
+        "profile_update",
         "login",
-        "logout",
+        "logout"
       ],
     },
     changes: {

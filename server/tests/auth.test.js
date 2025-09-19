@@ -1,6 +1,7 @@
 const request = require("supertest");
 const app = require("../app");
 const User = require("../models/User");
+const ActivityLogger = require("../utils/activityLogger");
 
 describe("Authentication Endpoints", () => {
   describe("POST /api/auth/register", () => {
@@ -241,5 +242,57 @@ describe("GET /api/auth/profile (Protected Route)", () => {
       .expect(401);
 
     expect(response.body.message).toBe("Invalid token.");
+  });
+});
+
+describe("Activity Logging", () => {
+  test("Should log account creation during registration", async () => {
+    const testUser = {
+      name: "Activity Test User",
+      username: "activity_test",
+      email: "activity@example.com",
+      password: "Password123!",
+      farmType: "small-scale",
+    };
+
+    const response = await request(app)
+      .post("/api/auth/register")
+      .send(testUser)
+      .expect(201);
+
+    const userId = response.body.user.id;
+
+    const activities = await ActivityLogger.getUserActivity(userId);
+
+    expect(activities).toHaveLength(1);
+    expect(activities[0].action).toBe("account_created");
+    expect(activities[0].changes.account.username).toBe(testUser.username);
+  });
+
+  test("should retrieve user activity", async () => {
+    const testUser = {
+      name: "Activity Get Test",
+      username: "activity_get_test",
+      email: "activityget@example.com",
+      password: "password123",
+    };
+
+    const registerResponse = await request(app)
+      .post("/api/auth/register")
+      .send(testUser);
+
+    const token = registerResponse.body.token;
+
+    const response = await request(app)
+      .get("/api/auth/activity")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    expect(response.body).toHaveProperty(
+      "message",
+      "Activity retrieved successfully"
+    );
+    expect(response.body.activities).toBeInstanceOf(Array);
+    expect(response.body.activities.length).toBeGreaterThan(0);
   });
 });
