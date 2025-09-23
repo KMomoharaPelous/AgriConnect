@@ -153,14 +153,6 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Protected route - get current user profile
-router.get("/profile", auth, async (req, res) => {
-  res.json({
-    message: "Profile accessed successfully",
-    user: req.user,
-  });
-});
-
 // Gets user's activity log
 router.get("/activity", auth, async (req, res) => {
   try {
