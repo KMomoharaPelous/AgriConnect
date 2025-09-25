@@ -46,7 +46,7 @@ router.patch('/profile', auth, async (req, res) => {
         if (updates.location) {
             const locationParts = updates.location.split(',');
             if (locationParts.length !== 2) {
-                return res.status(400).json({ message: 'Location must be in format: City, State '});
+                return res.status(400).json({ message: 'Location must be in format: City, State'});
             }
 
             const [city, state] = locationParts.map(part => part.trim());

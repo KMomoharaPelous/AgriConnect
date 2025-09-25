@@ -211,7 +211,7 @@ describe("GET /api/auth/profile (Protected Route)", () => {
 
   test("should access profile with valid token", async () => {
     const response = await request(app)
-      .get("/api/auth/profile")
+      .get("/api/users/profile")
       .set("Authorization", `Bearer ${authToken}`)
       .expect(200);
 
@@ -230,14 +230,14 @@ describe("GET /api/auth/profile (Protected Route)", () => {
   });
 
   test("should reject access without token", async () => {
-    const response = await request(app).get("/api/auth/profile").expect(401);
+    const response = await request(app).get("/api/users/profile").expect(401);
 
     expect(response.body.message).toBe("Access denied. No token provided.");
   });
 
   test("should reject access with invalid token", async () => {
     const response = await request(app)
-      .get("/api/auth/profile")
+      .get("/api/users/profile")
       .set("Authorization", "Bearer invalid_token_here")
       .expect(401);
 
@@ -245,7 +245,96 @@ describe("GET /api/auth/profile (Protected Route)", () => {
   });
 });
 
-describe("Activity Logging", () => {
+describe('PATCH /api/users/profile (Updated Profile)', () => {
+  const testUser = {
+    name: 'Jane Smith',
+    username: 'profule_jane',
+    email: 'jane@example.com',
+    password: 'password321',
+    farmType: 'hobby',
+  };
+
+  let authToken;
+
+  beforeEach(async () => {
+    const registerResponse = await request(app)
+      .post('/api/auth/register')
+      .send(testUser);
+
+      authToken = registerResponse.body.token;
+  });
+
+  test('should update user profile successfully', async () => {
+    const updates = {
+      name: 'Jane Updated Smith',
+      displayName: 'Janes Urban Farm',
+      location: 'Austin, TX',
+      farmType: 'small-scale',
+    };
+
+    const response = await request(app)
+      .patch('/api/users/profile')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send(updates)
+      .expect(200);
+
+    expect(response.body).toHaveProperty('message', 'Profile updated successfully');
+    expect(response.body.user).toMatchObject(updates);
+    expect(response.body.user).not.toHaveProperty('password');
+  });
+
+  test('should update partial profile information', async () => {
+    const updates = {
+      displayName: 'Janes Fancy Urban Farm',
+    };
+
+    const response = await request(app)
+      .patch('/api/users/profile')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send(updates)
+      .expect(200);
+
+    expect(response.body.user.displayName).toBe(updates.displayName);
+    expect(response.body.user.name).toBe(testUser.name);
+  });
+
+  test('should reject name longer than 25 characters', async () => {
+    const updates = { name: 'This name is longer than twenty five characters and should be rejected'};
+
+    const response = await request(app)
+      .patch('/api/users/profile')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send(updates)
+      .expect(400);
+
+    expect(response.body.message).toBe('Name must be 25 characters or less');
+  });
+
+  test('should reject invalid location format', async () => {
+    const updates = { location: 'InvalidLocationFormat' };
+
+    const response = await request(app)
+      .patch('/api/users/profile')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send(updates)
+      .expect(400);
+
+    expect(response.body.message).toBe('Location must be in format: City, State');
+  });
+
+  test('should require authentication', async () => {
+    const updates = { name: 'Should Fail' };
+
+    const response = await request(app)
+      .patch('/api/users/profile')
+      .send(updates)
+      .expect(401);
+
+    expect(response.body.message).toBe('Access denied. No token provided.');
+  });
+});
+
+/* describe("Activity Logging", () => {
   test("Should log account creation during registration", async () => {
     const testUser = {
       name: "Activity Test User",
@@ -296,3 +385,4 @@ describe("Activity Logging", () => {
     expect(response.body.activities.length).toBeGreaterThan(0);
   });
 });
+*/

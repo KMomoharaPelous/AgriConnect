@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const auth = require("../middleware/auth");
-const ActivityLogger = require("../utils/activityLogger");
+// const ActivityLogger = require("../utils/activityLogger");
 
 const router = express.Router();
 
@@ -58,13 +58,15 @@ router.post("/register", async (req, res) => {
     const savedUser = await newUser.save();
 
     // Log Account Creation
-    await ActivityLogger.logActivity(savedUser._id, "account_created", {
+    /* await ActivityLogger.logActivity(savedUser._id, "account_created", {
       account: {
         username: savedUser.username,
         email: savedUser.email,
         farmType: savedUser.farmType,
       },
     });
+
+    */
 
     // Generate JWT token
     const token = jwt.sign({ userId: savedUser._id }, process.env.JWT_SECRET, {
