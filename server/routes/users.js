@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 
@@ -118,6 +119,53 @@ router.get('/:username', async (req, res) => {
     } catch (error) {
         console.error('Get public user profile error:', error);
         res.status(500).json({ message: 'Server error retrieving user profile' });
+    }
+});
+
+// Change Password - PATCH /api/users/change-password
+router.patch('/change-password', auth, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const userId = req.user._id;
+
+        // Validation
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ message: 'Current password and new password are required' });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ message: 'New password must be at least 6 characters long' });
+        }
+
+        if (currentPassword === newPassword) {
+            return res.status(400).json({ message: 'New password must be different from current password' });
+        }
+        
+        // Get user with password
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Verify current password
+        const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isCurrentPasswordValid) {
+            return res.status(400).json({ message: 'Current password is incorrect' });
+        }
+
+        // Hash new password
+        const saltRounds = 12;
+        const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+        // Update user password
+        await User.findByIdAndUpdate(userId, { password: hashedNewPassword });
+
+        res.json({
+            message: 'Password changed successfully'
+        });
+    } catch (error) {
+        console.error('Password change error:', error);
+        res.status(500).json({ message: 'Server error during password change' });
     }
 });
 

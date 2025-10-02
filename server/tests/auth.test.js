@@ -334,6 +334,112 @@ describe('PATCH /api/users/profile (Updated Profile)', () => {
   });
 });
 
+describe('PATCH /api/users/change-password (Change Password)', () => {
+  const testUser = {
+    name: 'Password Test User',
+    username: 'password_test',
+    email: 'passwordtest@example.com',
+    password: 'oldPassword123',
+    farmType: 'hobby'
+  };
+
+  let authToken;
+
+  beforeEach(async () => {
+    const registerResponse = await request(app)
+      .post('/api/auth/register')
+      .send(testUser);
+
+    authToken = registerResponse.body.token;
+  });
+
+  test('should change password successfully', async () => {
+    const passwordData = {
+      currentPassword: testUser.password,
+      newPassword: 'newPassword456!'
+    };
+
+    const response = await request(app)
+      .patch('/api/users/change-password')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send(passwordData)
+      .expect(200);
+
+    expect(response.body).toHaveProperty('message', 'Password changed successfully');
+
+
+    // Verify we can login with new password
+    const loginResponse = await request(app)
+      .post('/api/auth/login')
+      .send({
+        emailOrUsername: testUser.email,
+        password: 'newPassword456!'
+      })
+      .expect(200);
+
+    expect(loginResponse.body).toHaveProperty('token');
+  });
+
+  test('should reject incorrect password', async () => {
+    const passwordData = {
+      currentPassword:'wrongPassword',
+      newPassword: 'newPassword456!'
+    };
+
+    const response = await request(app)
+      .patch('/api/users/change-password')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send(passwordData)
+      .expect(400);
+
+    expect(response.body.message).toBe('Current password is incorrect');
+  });
+
+  test('should reject short new password', async () => {
+    const passwordData = {
+      currentPassword: testUser.password,
+      newPassword: '12345'
+    };
+
+    const response = await request(app)
+      .patch('/api/users/change-password')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send(passwordData)
+      .expect(400);
+
+    expect(response.body.message).toBe('New password must be at least 6 characters long');
+  });
+
+  test('should reject same current and new password', async () => {
+    const passwordData = {
+      currentPassword: testUser.password,
+      newPassword: testUser.password
+    };
+
+    const response = await request(app)
+      .patch('/api/users/change-password')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send(passwordData)
+      .expect(400);
+
+    expect(response.body.message).toBe('New password must be different from current password');
+  });
+
+  test('should require authentication', async () => {
+    const passwordData = {
+      currentPassword: testUser.password,
+      newPassword: 'newPassword456'
+    };
+
+    const response = await request(app)
+      .patch('/api/users/change-password')
+      .send(passwordData)
+      .expect(401);
+
+    expect(response.body.message).toBe('Access denied. No token provided.')
+  });
+});
+
 /* describe("Activity Logging", () => {
   test("Should log account creation during registration", async () => {
     const testUser = {
